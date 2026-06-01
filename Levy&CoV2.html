@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Levy &amp; Co.</title>
+<meta name="description" content="Building value through Fenix ventures and Bless Foundation." />
+
+<!-- Minimal phoenix favicon (adapts to light/dark via SVG variables) -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><style>path{fill:%23000}@media (prefers-color-scheme: dark){path{fill:%23fff}}</style><path d='M50 6 Q54 10 54 18 Q54 21 52 23 Q60 22 68 25 Q78 28 86 36 Q92 42 94 50 Q86 46 76 45 Q66 44 60 47 Q56 51 55 56 Q54 62 56 68 L62 70 L60 88 L57 78 L55 92 L52 80 L50 94 L48 80 L45 92 L43 78 L40 88 L38 70 L44 68 Q46 62 45 56 Q44 51 40 47 Q34 44 24 45 Q14 46 6 50 Q8 42 14 36 Q22 28 32 25 Q40 22 48 23 Q46 21 46 18 Q46 10 50 6 Z'/></svg>" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Tenor+Sans&display=swap" rel="stylesheet" />
+
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --fg: #f4f1ea;
+    --fg-soft: rgba(244, 241, 234, 0.55);
+    --fg-faint: rgba(244, 241, 234, 0.25);
+    --line: rgba(244, 241, 234, 0.18);
+    --grain-opacity: 0.06;
+    --transition: 1200ms cubic-bezier(0.65, 0, 0.25, 1);
+  }
+
+  [data-theme="light"] {
+    --bg: #f4f1ea;
+    --fg: #0a0a0a;
+    --fg-soft: rgba(10, 10, 10, 0.55);
+    --fg-faint: rgba(10, 10, 10, 0.25);
+    --line: rgba(10, 10, 10, 0.18);
+    --grain-opacity: 0.04;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'Tenor Sans', serif;
+    transition: background var(--transition), color var(--transition);
+    cursor: default;
+    position: relative;
+  }
+
+  /* Subtle film-grain texture for analog warmth */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 100;
+    opacity: var(--grain-opacity);
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.6 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    mix-blend-mode: difference;
+    transition: opacity var(--transition);
+  }
+
+  /* Slow vignette pulse for atmosphere */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    background: radial-gradient(ellipse at center, transparent 30%, var(--bg) 100%);
+    opacity: 0.6;
+    transition: background var(--transition);
+  }
+
+  main {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+
+  /* Top frame line */
+  .frame-top, .frame-bottom {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 1px;
+    background: var(--line);
+    transition: width 1800ms cubic-bezier(0.65, 0, 0.25, 1) 600ms,
+                background var(--transition);
+    z-index: 3;
+  }
+  .frame-top { top: 32px; }
+  .frame-bottom { bottom: 32px; }
+  body.loaded .frame-top,
+  body.loaded .frame-bottom { width: calc(100% - 64px); }
+
+  /* Corner marks */
+  .corner {
+    position: fixed;
+    font-family: 'Tenor Sans', sans-serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--fg-soft);
+    opacity: 0;
+    transition: opacity 1200ms ease 1800ms,
+                color var(--transition);
+    z-index: 4;
+  }
+  body.loaded .corner { opacity: 1; }
+  .corner-tl { top: 48px; left: 48px; }
+  .corner-tr { top: 48px; right: 48px; }
+  .corner-bl { bottom: 48px; left: 48px; }
+  .corner-br { bottom: 48px; right: 48px; }
+
+  /* Center stage */
+  .stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2.5rem;
+  }
+
+  /* Phoenix mark */
+  .mark {
+    width: 60px;
+    height: 60px;
+    opacity: 0;
+    transform: translateY(12px) scale(0.92);
+    transition: opacity 1400ms ease 200ms,
+                transform 1400ms cubic-bezier(0.2, 0.8, 0.2, 1) 200ms;
+  }
+  body.loaded .mark { opacity: 1; transform: translateY(0) scale(1); }
+
+  .mark svg { width: 100%; height: 100%; display: block; }
+  .mark svg path {
+    fill: var(--fg);
+    transition: fill var(--transition);
+  }
+
+  /* Wordmark */
+  .wordmark {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 400;
+    font-size: clamp(4.5rem, 12vw, 10rem);
+    letter-spacing: 0.01em;
+    line-height: 1;
+    display: flex;
+    align-items: baseline;
+    gap: 0.1em;
+    white-space: nowrap;
+  }
+
+  .wordmark .letter {
+    display: inline-block;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 900ms cubic-bezier(0.2, 0.8, 0.2, 1),
+                transform 900ms cubic-bezier(0.2, 0.8, 0.2, 1),
+                color var(--transition);
+  }
+
+  .wordmark .amp {
+    font-style: italic;
+    font-weight: 400;
+    color: var(--fg-soft);
+    margin: 0 0.05em;
+    transform: translateY(-0.08em);
+  }
+
+  body.loaded .wordmark .letter { opacity: 1; transform: translateY(0); }
+  body.loaded .wordmark .letter.amp { transform: translateY(-0.08em); }
+
+  /* Stagger reveal */
+  .wordmark .letter:nth-child(1) { transition-delay: 900ms; }
+  .wordmark .letter:nth-child(2) { transition-delay: 1000ms; }
+  .wordmark .letter:nth-child(3) { transition-delay: 1100ms; }
+  .wordmark .letter:nth-child(4) { transition-delay: 1200ms; }
+  .wordmark .letter:nth-child(5) { transition-delay: 1300ms; }
+  .wordmark .letter:nth-child(6) { transition-delay: 1400ms; }
+  .wordmark .letter:nth-child(7) { transition-delay: 1500ms; }
+
+  /* Divider */
+  .divider {
+    width: 0;
+    height: 1px;
+    background: var(--fg-faint);
+    transition: width 1400ms cubic-bezier(0.65, 0, 0.25, 1) 2000ms,
+                background var(--transition);
+  }
+  body.loaded .divider { width: 80px; }
+
+  /* Tagline */
+  .tagline {
+    font-family: 'Tenor Sans', sans-serif;
+    font-size: 0.72rem;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: var(--fg-soft);
+    text-align: center;
+    max-width: 540px;
+    line-height: 1.9;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 1200ms ease 2400ms,
+                transform 1200ms ease 2400ms,
+                color var(--transition);
+  }
+  body.loaded .tagline { opacity: 1; transform: translateY(0); }
+
+  /* Theme toggle — discreet dot in bottom-right */
+  .toggle {
+    position: fixed;
+    bottom: 48px;
+    right: 48px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: transparent;
+    cursor: pointer;
+    z-index: 5;
+    opacity: 0;
+    transition: opacity 1200ms ease 2600ms,
+                border-color var(--transition),
+                transform 400ms ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  body.loaded .toggle { opacity: 1; }
+  .toggle:hover { transform: scale(1.08); }
+  .toggle::before {
+    content: '';
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--fg);
+    transition: background var(--transition), transform 600ms cubic-bezier(0.65, 0, 0.25, 1);
+  }
+  [data-theme="light"] .toggle::before {
+    background: transparent;
+    box-shadow: inset 0 0 0 1px var(--fg);
+  }
+
+  /* Replace corner-br label when toggle is there */
+  .corner-br { right: 96px; bottom: 56px; }
+
+  /* Subtle breathing on the mark */
+  body.loaded .mark { animation: breathe 6s ease-in-out 3s infinite; }
+  @keyframes breathe {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(0) scale(1.03); }
+  }
+
+  /* Mobile adjustments */
+  @media (max-width: 640px) {
+    .corner { font-size: 0.55rem; letter-spacing: 0.22em; }
+    .corner-tr { top: 28px; right: 24px; }
+    .corner-bl { bottom: 28px; left: 24px; }
+    .corner-br { bottom: 28px; right: 24px; display: none; }
+    .frame-top { top: 16px; }
+    .frame-bottom { bottom: 16px; }
+    body.loaded .frame-top,
+    body.loaded .frame-bottom { width: calc(100% - 32px); }
+    .toggle { bottom: 24px; right: 24px; width: 32px; height: 32px; }
+    .tagline { font-size: 0.6rem; letter-spacing: 0.25em; padding: 0 1rem; }
+    .stage { gap: 1.75rem; }
+    .mark { width: 48px; height: 48px; }
+  }
+
+  /* Respect reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 200ms !important;
+    }
+  }
+</style>
+</head>
+<body>
+
+  <div class="frame-top"></div>
+  <div class="frame-bottom"></div>
+
+  <div class="corner corner-tr">BH</div>
+  <div class="corner corner-bl">TLV &nbsp;&middot;&nbsp; NYC &nbsp;&middot;&nbsp; SF</div>
+
+  <main>
+    <div class="stage">
+
+      <!-- Phoenix mark: head, wings spread, fanned tail feathers -->
+      <div class="mark" aria-hidden="true">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <path d="M50 6
+                   Q54 10 54 18
+                   Q54 21 52 23
+                   Q60 22 68 25
+                   Q78 28 86 36
+                   Q92 42 94 50
+                   Q86 46 76 45
+                   Q66 44 60 47
+                   Q56 51 55 56
+                   Q54 62 56 68
+                   L62 70 L60 88 L57 78 L55 92 L52 80
+                   L50 94
+                   L48 80 L45 92 L43 78 L40 88 L38 70
+                   L44 68
+                   Q46 62 45 56
+                   Q44 51 40 47
+                   Q34 44 24 45
+                   Q14 46 6 50
+                   Q8 42 14 36
+                   Q22 28 32 25
+                   Q40 22 48 23
+                   Q46 21 46 18
+                   Q46 10 50 6 Z" />
+        </svg>
+      </div>
+
+      <!-- Wordmark: Levy & Co. -->
+      <h1 class="wordmark" aria-label="Levy and Co.">
+        <span class="letter">L</span><span class="letter">e</span><span class="letter">v</span><span class="letter">y</span><span class="letter amp">&amp;</span><span class="letter">C</span><span class="letter">o.</span>
+      </h1>
+
+      <div class="divider"></div>
+
+      <p class="tagline">
+        Building value through Fenix Ventures<br />
+        &amp; Bless Foundation
+      </p>
+
+    </div>
+  </main>
+
+  <button class="toggle" aria-label="Toggle theme" id="themeToggle"></button>
+
+<script>
+  // Trigger entrance animations
+  window.addEventListener('load', () => {
+    requestAnimationFrame(() => {
+      document.body.classList.add('loaded');
+    });
+  });
+
+  // Theme toggle with smooth state persistence (in-memory only for this session)
+  const root = document.documentElement;
+  const toggle = document.getElementById('themeToggle');
+  toggle.addEventListener('click', () => {
+    const current = root.getAttribute('data-theme');
+    root.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
+  });
+
+  // Press 'T' as keyboard shortcut
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 't' || e.key === 'T') toggle.click();
+  });
+</script>
+
+</body>
+</html>
